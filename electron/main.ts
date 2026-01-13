@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import { join } from 'path';
 import * as pty from '@lydell/node-pty';
 import Store from 'electron-store';
@@ -171,4 +171,13 @@ ipcMain.handle('store:get-working-dir', async () => {
 
 ipcMain.handle('store:set-working-dir', async (_, value: string | null) => {
   store.set('workingDir', value);
+});
+
+ipcMain.handle('shell:selectDirectory', async () => {
+  const result = await dialog.showOpenDialog(mainWindow!, {
+    properties: ['openDirectory'],
+    title: 'Select Project Directory',
+  });
+  if (result.canceled || result.filePaths.length === 0) return null;
+  return result.filePaths[0];
 });

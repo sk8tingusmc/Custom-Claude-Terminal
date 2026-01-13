@@ -5,6 +5,7 @@ import '@xterm/xterm/css/xterm.css';
 
 interface TerminalProps {
   bypassMode: boolean;
+  workingDir: string | null;
   onSessionCreated: (sessionId: string) => void;
   shouldReset: boolean;
 }
@@ -33,7 +34,7 @@ const THEME = {
   brightWhite: '#ffffff',
 };
 
-function Terminal({ bypassMode, onSessionCreated, shouldReset }: TerminalProps) {
+function Terminal({ bypassMode, workingDir, onSessionCreated, shouldReset }: TerminalProps) {
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<XTerm | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
@@ -107,7 +108,6 @@ function Terminal({ bypassMode, onSessionCreated, shouldReset }: TerminalProps) 
     const initSession = async () => {
       try {
         const terminal = xtermRef.current!;
-        const workingDir = await window.store.getWorkingDir();
 
         // Create shell session
         const sessionId = await window.shell.create(bypassMode, workingDir || undefined);

@@ -7,6 +7,7 @@ declare global {
       write: (sessionId: string, data: string) => Promise<void>;
       resize: (sessionId: string, cols: number, rows: number) => Promise<void>;
       kill: (sessionId: string) => Promise<void>;
+      selectDirectory: () => Promise<string | null>;
       onData: (callback: (sessionId: string, data: string) => void) => () => void;
       onExit: (callback: (sessionId: string, exitCode: number) => void) => () => void;
     };

@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld('shell', {
     ipcRenderer.invoke('shell:resize', sessionId, cols, rows),
   kill: (sessionId: string) =>
     ipcRenderer.invoke('shell:kill', sessionId),
+  selectDirectory: () => ipcRenderer.invoke('shell:selectDirectory'),
   onData: (callback: (sessionId: string, data: string) => void) => {
     const listener = (_: any, sessionId: string, data: string) => callback(sessionId, data);
     ipcRenderer.on('shell:data', listener);
