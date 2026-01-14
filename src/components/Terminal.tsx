@@ -40,6 +40,29 @@ function Terminal({ bypassMode, workingDir, onSessionCreated, shouldReset }: Ter
   const fitAddonRef = useRef<FitAddon | null>(null);
   const sessionIdRef = useRef<string | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+
+  // Copy selected text
+  const handleCopy = () => {
+    const selection = xtermRef.current?.getSelection();
+    if (selection) {
+      navigator.clipboard.writeText(selection);
+    }
+    setContextMenu(null);
+  };
+
+  // Paste from clipboard
+  const handlePaste = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text && sessionIdRef.current) {
+        window.shell.write(sessionIdRef.current, text);
+      }
+    } catch (err) {
+      console.error('Failed to paste:', err);
+    }
+    setContextMenu(null);
+  };
 
   // Create terminal instance once
   useEffect(() => {
@@ -82,8 +105,32 @@ function Terminal({ bypassMode, workingDir, onSessionCreated, shouldReset }: Ter
       }
     });
 
+    // Handle Ctrl+Shift+V for paste
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'V') {
+        e.preventDefault();
+        navigator.clipboard.readText().then((text) => {
+          if (text && sessionIdRef.current) {
+            window.shell.write(sessionIdRef.current, text);
+          }
+        });
+      }
+      // Also handle Ctrl+V
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === 'v') {
+        e.preventDefault();
+        navigator.clipboard.readText().then((text) => {
+          if (text && sessionIdRef.current) {
+            window.shell.write(sessionIdRef.current, text);
+          }
+        });
+      }
+    };
+
+    terminalRef.current?.addEventListener('keydown', handleKeyDown);
+
     // Cleanup on unmount
     return () => {
+      terminalRef.current?.removeEventListener('keydown', handleKeyDown);
       terminal.dispose();
       xtermRef.current = null;
       fitAddonRef.current = null;
@@ -153,7 +200,49 @@ function Terminal({ bypassMode, workingDir, onSessionCreated, shouldReset }: Ter
     return cleanup;
   }, [onSessionCreated]);
 
-  return <div ref={terminalRef} className="w-full h-full" />;
+  // Handle right-click
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setContextMenu({ x: e.clientX, y: e.clientY });
+  };
+
+  // Close context menu on click outside
+  useEffect(() => {
+    const handleClick = () => setContextMenu(null);
+    if (contextMenu) {
+      document.addEventListener('click', handleClick);
+      return () => document.removeEventListener('click', handleClick);
+    }
+  }, [contextMenu]);
+
+  return (
+    <div className="relative w-full h-full">
+      <div
+        ref={terminalRef}
+        className="w-full h-full"
+        onContextMenu={handleContextMenu}
+      />
+      {contextMenu && (
+        <div
+          className="fixed bg-gray-800 border border-gray-600 rounded shadow-lg py-1 z-50"
+          style={{ left: contextMenu.x, top: contextMenu.y }}
+        >
+          <button
+            onClick={handleCopy}
+            className="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-700"
+          >
+            Copy
+          </button>
+          <button
+            onClick={handlePaste}
+            className="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-700"
+          >
+            Paste
+          </button>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default Terminal;
