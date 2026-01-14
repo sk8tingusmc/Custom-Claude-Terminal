@@ -100,13 +100,16 @@ ipcMain.handle('shell:create', async (_, bypassMode: boolean, workingDir?: strin
   const args: string[] = [];
 
   // Add claude command with bypass flag if needed
-  const claudeCmd = bypassMode ? 'claude --dangerously-skip-permissions' : 'claude';
+  const claudeFlag = bypassMode ? ' --dangerously-skip-permissions' : '';
 
   if (os.platform() === 'win32') {
+    const claudeCmd = `claude${claudeFlag}`;
     args.push('-Command', claudeCmd);
   } else {
-    // Use login shell (-l) to load user's profile (nvm, etc.)
-    args.push('-l', '-c', claudeCmd);
+    // Source nvm if it exists, then run claude
+    const nvmSource = 'export NVM_DIR="$HOME/.nvm"; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh";';
+    const claudeCmd = `${nvmSource} claude${claudeFlag}`;
+    args.push('-c', claudeCmd);
   }
 
   const ptyProcess = pty.spawn(shell, args, {
