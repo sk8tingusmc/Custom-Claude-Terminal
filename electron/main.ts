@@ -105,7 +105,8 @@ ipcMain.handle('shell:create', async (_, bypassMode: boolean, workingDir?: strin
   if (os.platform() === 'win32') {
     args.push('-Command', claudeCmd);
   } else {
-    args.push('-c', claudeCmd);
+    // Use login shell (-l) to load user's profile (nvm, etc.)
+    args.push('-l', '-c', claudeCmd);
   }
 
   const ptyProcess = pty.spawn(shell, args, {
